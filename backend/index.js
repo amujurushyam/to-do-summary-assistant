@@ -41,28 +41,26 @@ app.delete("/todos/:id", async (req, res) => {
 
 app.post("/summarize", async (req, res) => {
   const todos = await Todo.find();
+
   if (!todos.length) {
-    return res.status(400).send({ error: "No todos to summarize." });
+    return res.status(400).json({ error: "No todos to summarize." });
   }
 
-  const prompt = `Summarize these tasks:\n${todos
-    .map((t) => `- ${t.task}`)
-    .join("\n")}`;
-  console.log("📝 Mock Prompt:", prompt);
+  const taskList = todos.map((t) => `- ${t.task}`).join("\n");
+  const firstTask = todos[0]?.task;
+
+  const summary = `📝 You have ${todos.length} tasks pending.\nFirst priority: ${firstTask}\nTasks:\n${taskList}`;
 
   try {
-    const summary =
-      "You have multiple tasks. Prioritize important ones like 'Finish Assignment' and handle others in your free time.";
-
-    const slackRes = await axios.post(process.env.SLACK_WEBHOOK_URL, {
-      text: `📝 *Todo Summary (Mocked)*:\n${summary}`,
+    await axios.post(process.env.SLACK_WEBHOOK_URL, {
+      text: summary,
     });
 
-    console.log(" Mock summary sent to Slack:", slackRes.status);
-    res.send({ message: "Mock summary sent to Slack" });
+    console.log("✅ Summary sent to Slack (no OpenAI)");
+    res.json({ message: "Summary sent to Slack (no OpenAI)" });
   } catch (err) {
-    console.error(" Slack send failed:", err.message);
-    res.status(500).send({ error: "Failed to send mock summary to Slack" });
+    console.error("❌ Slack send failed:", err.message);
+    res.status(500).json({ error: "Failed to send summary to Slack" });
   }
 });
 
