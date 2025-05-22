@@ -1,17 +1,13 @@
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import axios from "axios";
 import cors from "cors";
-import OpenAI from "openai";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 app.use(cors());
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 mongoose
   .connect(process.env.MONGO_URI, {
@@ -45,25 +41,9 @@ app.post("/summarize", async (req, res) => {
     return res.status(400).send({ error: "No todos to summarize." });
   }
 
-  const prompt = `Summarize these tasks:\n${todos
-    .map((t) => `- ${t.task}`)
-    .join("\n")}`;
-  console.log("📝 Mock Prompt:", prompt);
+  const summary = `You have ${todos.length} tasks. Start with the most important one and check them off!`;
 
-  try {
-    const summary =
-      "You have multiple tasks. Prioritize important ones like 'Finish Assignment' and handle others in your free time.";
-
-    const slackRes = await axios.post(process.env.SLACK_WEBHOOK_URL, {
-      text: `📝 *Todo Summary (Mocked)*:\n${summary}`,
-    });
-
-    console.log(" Mock summary sent to Slack:", slackRes.status);
-    res.send({ message: "Mock summary sent to Slack" });
-  } catch (err) {
-    console.error(" Slack send failed:", err.message);
-    res.status(500).send({ error: "Failed to send mock summary to Slack" });
-  }
+  res.send({ summary });
 });
 
 app.listen(process.env.PORT || 4000, () =>
