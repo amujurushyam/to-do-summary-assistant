@@ -11,7 +11,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-const openai = new OpenAI({ apiKey: process.env });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 mongoose
   .connect(process.env.MONGO_URI, {
@@ -41,26 +41,28 @@ app.delete("/todos/:id", async (req, res) => {
 
 app.post("/summarize", async (req, res) => {
   const todos = await Todo.find();
-
   if (!todos.length) {
-    return res.status(400).json({ error: "No todos to summarize." });
+    return res.status(400).send({ error: "No todos to summarize." });
   }
 
-  const taskList = todos.map((t) => `- ${t.task}`).join("\n");
-  const firstTask = todos[0]?.task;
-
-  const summary = `📝 You have ${todos.length} tasks pending.\nFirst priority: ${firstTask}\nTasks:\n${taskList}`;
+  const prompt = `Summarize these tasks:\n${todos
+    .map((t) => `- ${t.task}`)
+    .join("\n")}`;
+  console.log("📝 Mock Prompt:", prompt);
 
   try {
-    await axios.post(process.env.SLACK_WEBHOOK_URL, {
-      text: summary,
+    const summary =
+      "You have multiple tasks. Prioritize important ones like 'Finish Assignment' and handle others in your free time.";
+
+    const slackRes = await axios.post(process.env.SLACK_WEBHOOK_URL, {
+      text: `📝 *Todo Summary (Mocked)*:\n${summary}`,
     });
 
-    console.log("✅ Summary sent to Slack (no OpenAI)");
-    res.json({ message: "Summary sent to Slack (no OpenAI)" });
+    console.log(" Mock summary sent to Slack:", slackRes.status);
+    res.send({ message: "Mock summary sent to Slack" });
   } catch (err) {
-    console.error("❌ Slack send failed:", err.message);
-    res.status(500).json({ error: "Failed to send summary to Slack" });
+    console.error(" Slack send failed:", err.message);
+    res.status(500).send({ error: "Failed to send mock summary to Slack" });
   }
 });
 
